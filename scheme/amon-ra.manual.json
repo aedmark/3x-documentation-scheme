@@ -1,0 +1,1033 @@
+{
+  "$schema": "./manual.schema.json",
+  "project": {
+    "name": "AmonRaRedux",
+    "version": "1.0.0-dev"
+  },
+  "manual": {
+    "title": "Amon Ra Redux Developer Manual & Modernization Roadmap",
+    "subtitle": "Comprehensive engineering specification for patching and modernizing Laura Bow II (SCI 1.1 Floppy)",
+    "description": "Architecture, decompilation, script patching, narrative coherence, and puzzle fixes based on the SCI 1.1 floppy release.",
+    "badges": [
+      "SCI 1.1",
+      "DOS Floppy v1.000 Base",
+      "Definitive Edition Patch"
+    ]
+  },
+  "theme": {
+    "icon": "\u2625"
+  },
+  "sections": [
+    {
+      "id": "foundations-tooling",
+      "title": "Foundations and Toolchain",
+      "description": "Base game assets, Wine execution environment, SCI Companion decompilation, and ScummVM regression testing.",
+      "entries": [
+        {
+          "id": "floppy-base-architecture",
+          "title": "Floppy v1.000 Base Engine Architecture",
+          "summary": "The DOS floppy v1.000 release serves as the foundational source of truth for all modernizations.",
+          "tags": [
+            "core",
+            "engine",
+            "assets"
+          ],
+          "what": "Establishes Laura Bow II (Floppy v1.000) as the immutable base game directory. Loose patch files in the directory override compressed archive resources at runtime without corrupting original assets.",
+          "how": {
+            "lead": "The SCI 1.1 interpreter loads resources using a two-tier lookup mechanism:",
+            "points": [
+              "The interpreter searches the current directory for loose resource files matching the naming scheme <resourceNumber>.<resourceExt> (e.g., 0.SCR, 13.MSG).",
+              "If no loose override exists, the interpreter queries RESOURCE.MAP for the offset and reads from RESOURCE.000.",
+              "Original uncompressed brushstroke background pictures and EGA/VGA palettes are preserved directly from the floppy media."
+            ]
+          },
+          "why": "The floppy release contains superior uncompressed brushstroke textures on backgrounds (such as the newsroom desk) and cleaner timing logic compared to the CD release. Building modular loose patches guarantees that original assets remain untouched and patches can be cleanly uninstalled or distributed.",
+          "evidence": [
+            {
+              "label": "Game Version File",
+              "target": "LB2/VERSION"
+            },
+            {
+              "label": "Resource Configuration",
+              "target": "LB2/RESOURCE.CFG"
+            },
+            {
+              "label": "Resource Map",
+              "target": "LB2/RESOURCE.MAP"
+            }
+          ],
+          "related": [
+            "sci-patch-mechanism",
+            "sci-companion-wine-workflow",
+            "p1-06-art-deco-preservation"
+          ]
+        },
+        {
+          "id": "sci-companion-wine-workflow",
+          "title": "SCI Companion Execution Under Wine",
+          "summary": "Win32 SCI Companion runs under Wine to decompile, edit, and recompile SCI 1.1 scripts and message resources.",
+          "tags": [
+            "tooling",
+            "wine",
+            "decompiler"
+          ],
+          "what": "Enables decompilation of compiled bytecodes (.SCR/.HEP) into human-readable SCI Studio / Sierra syntax (.sc), visual editing of message tables (.MSG), room priority boundaries (.PIC), and views (.V56) within Linux.",
+          "how": {
+            "lead": "The developer launches SCI Companion via Wine using the pre-compiled binary:",
+            "points": [
+              "Execution command: wine /home/gordonk/PycharmProjects/SCICompanion/Release/SCICompanion.exe LB2/RESOURCE.MAP.",
+              "Scripts are decompiled into source/ directories with symbol recovery driven by Decompiler.ini and selector vocabularies.",
+              "Recompiled scripts emit paired .SCR (code chunk) and .HEP (heap object definitions) back into the game directory for immediate execution."
+            ]
+          },
+          "why": "SCI Companion provides high-level control-flow recovery (reconstructing while loops, if-else branches, and switch-cases) rather than raw assembly disassembly, dramatically reducing reverse-engineering overhead and preventing bytecode syntax bugs.",
+          "evidence": [
+            {
+              "label": "SCI Companion Binary",
+              "target": "/home/gordonk/PycharmProjects/SCICompanion/Release/SCICompanion.exe"
+            },
+            {
+              "label": "Decompiler Configuration",
+              "target": "SCICompanion/Files/Decompiler/Decompiler.ini"
+            }
+          ],
+          "related": [
+            "floppy-base-architecture",
+            "sci-patch-mechanism",
+            "scummvm-testing-harness"
+          ]
+        },
+        {
+          "id": "sci-patch-mechanism",
+          "title": "Modular SCI 1.1 Loose Patching Model",
+          "summary": "Non-destructive drop-in patch architecture replacing only affected scripts and message lumps.",
+          "tags": [
+            "architecture",
+            "build",
+            "distribution"
+          ],
+          "what": "Compiles modified scripts and message lumps into individual standalone files in the LB2/ folder rather than repacking RESOURCE.000, enabling rapid iteration and isolated bug verification.",
+          "how": [
+            "Each bug fix targets specific script IDs (e.g., 0.SCR for global kernel logic, 13.SCR for interrogations, 440.SCR for Armor Room).",
+            "The compiler emits <id>.SCR, <id>.HEP, and <id>.MSG.",
+            "The ScummVM and DOSBox runtimes load loose files automatically in priority over RESOURCE.000 contents."
+          ],
+          "why": "Repacking RESOURCE.000 on every iteration risks whole-archive corruption, invalidates offset tables, and complicates git diff tracking. Loose patch distribution is the standard, verified Sierra patch methodology.",
+          "evidence": [
+            {
+              "label": "Root Loose Scripts",
+              "target": "LB2/0.SCR"
+            },
+            {
+              "label": "Message Loose Resource",
+              "target": "LB2/0.MSG"
+            }
+          ],
+          "related": [
+            "floppy-base-architecture",
+            "scummvm-testing-harness"
+          ]
+        },
+        {
+          "id": "scummvm-testing-harness",
+          "title": "ScummVM Debugging and Test Automation",
+          "summary": "Automated regression testing, script inspection, and variable inspection using ScummVM.",
+          "tags": [
+            "testing",
+            "automation",
+            "debugger"
+          ],
+          "what": "Executes LB2 within ScummVM with debugger flags enabled, allowing live inspection of global variables, event queues, object properties, and scripted cutscene triggers.",
+          "how": [
+            "Launch command: scummvm -d 1 --auto-detect --path=LB2 sci:laurabow2.",
+            "ScummVM debug console commands (Ctrl+Alt+D): var g, send ego, log, and sc to inspect script execution.",
+            "Script regression tests are recorded with deterministic save states saved before key branches."
+          ],
+          "why": "ScummVM runs natively on Linux without emulation lag, reports detailed bytecode parse warnings and heap boundary violations, and enables headless scripting verification.",
+          "evidence": [
+            {
+              "label": "ScummVM Detection Command",
+              "target": "scummvm --detect --path=LB2"
+            }
+          ],
+          "related": [
+            "sci-companion-wine-workflow",
+            "sci-patch-mechanism"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-1-stability-ui",
+      "title": "Phase 1: Critical Stability and UI/UX Overhaul",
+      "description": "Phase 1 focuses on core user experience improvements: streamlining the cumbersome interrogation interface, restoring unrestricted save/load functionality, expanding minuscule hotspots, fixing the Act 2 About memory bug, and eliminating visual glitches.",
+      "entries": [
+        {
+          "id": "p1-01-ui-interrogation",
+          "title": "P1-01: User Interface (UI) Efficiency & Interrogation Streamlining",
+          "summary": "Reduces interrogation from five clicks down to a context-sensitive double-click or fast-inquiry mode.",
+          "tags": [
+            "ui",
+            "interrogation",
+            "p1"
+          ],
+          "what": "Streamlines NPC questioning so players no longer need to execute five sequential clicks per inquiry. Clicking an NPC with the notebook directly activates their questioning topic list, and double-clicking re-asks the most recent or primary topic.",
+          "how": {
+            "lead": "Refactors event handling across Script 0 (IconBar/Game) and Script 13 (Notebook/Interrogation UI):",
+            "points": [
+              "In the NPC doVerb handler for verb vAsk (Ask), intercept the target actor instance.",
+              "If double-click or modifier is detected, repeat last query immediately without opening modal UI.",
+              "When opening the notebook, automatically select the target NPC in the character selector tab instead of forcing manual category and person re-selection.",
+              "Retain active scroll position and focus on confirm button for keyboard/enter affirmation."
+            ]
+          },
+          "why": "Interrogating suspects across Act 2 requires dozens of questions. Requiring 5 clicks per question generates extreme player fatigue. Streamlining interaction keeps the mystery engaging while retaining full notebook depth.",
+          "evidence": [
+            {
+              "label": "Notebook Script",
+              "target": "LB2/20.SCR"
+            },
+            {
+              "label": "System UI Script",
+              "target": "LB2/0.SCR"
+            }
+          ],
+          "related": [
+            "p2-01-notebook-fallback-triggers",
+            "p3-03-pacing-eavesdropping-rebalance"
+          ]
+        },
+        {
+          "id": "p1-02-save-load-unrestricted",
+          "title": "P1-02: Save/Load Functionality Across All Screens & Chase Sequence",
+          "summary": "Re-enables save and load actions on all screens, especially the Act 5 chase sequence.",
+          "tags": [
+            "save-system",
+            "act-5",
+            "p1"
+          ],
+          "what": "Ensures the Save and Restore game options remain enabled across every room and action sequence in the game, specifically removing arbitrary lockouts during the Act 5 museum chase.",
+          "how": [
+            "Scan room init scripts in rooms 500, 510, 520, and 550 for calls disabling the save icon in theIconBar.",
+            "Remove (theIconBar disable: ICON_SAVE ICON_RESTORE) and replace with clean game state serialization.",
+            "In chase sequence motion scripts, pause villain pursuit timers while the file-selection save dialog is active so saving does not cause instant death upon restore."
+          ],
+          "why": "The CD version inexplicably disabled the menu in Act 5, punishing players with complete sequence restarts upon death. Restoring save/load gives players the autonomy expected of adventure games.",
+          "evidence": [
+            {
+              "label": "Chase Corridor Script",
+              "target": "LB2/500.SCR"
+            },
+            {
+              "label": "Chase Maze Script",
+              "target": "LB2/520.SCR"
+            },
+            {
+              "label": "Endgame Chase Script",
+              "target": "LB2/550.SCR"
+            }
+          ],
+          "related": [
+            "p3-01-dead-man-walking-prevention",
+            "p3-04-unfair-deaths-warnings"
+          ]
+        },
+        {
+          "id": "p1-03-hotspot-pixel-hunts",
+          "title": "P1-03: Invisible Hotspots & Pixel Hunt Elimination",
+          "summary": "Expands clickable hitboxes for tiny or obscure items to match visual rendering.",
+          "tags": [
+            "hotspots",
+            "hitboxes",
+            "p1"
+          ],
+          "what": "Expands the clickable bounding boxes and polygon boundaries for obscure or sub-pixel items, specifically the skeleton key glint on the painting, the intercom buttons, and the poetry book.",
+          "how": {
+            "lead": "Modifies feature definitions and onMeCheck polygons in room scripts:",
+            "points": [
+              "Skeleton key glint: In Room 440 (Armor Room), expand feature paintingKey bounding box from 2x2 pixels to a generous 16x16 pixel zone matching the visual glint cel.",
+              "Intercom buttons: In Room 400/420, expand button feature rectangular bounds and assign distinct click regions for each button row.",
+              "Poetry book: In Room 230 (Office/Library), enlarge the desk book polygon so clicks on the book spine and edges register reliably."
+            ]
+          },
+          "why": "Pixel hunting on a 320x200 canvas is tedious and unrewarding. Clues and interactable objects should reward deductive reasoning rather than random cursor clicking across every pixel.",
+          "evidence": [
+            {
+              "label": "Armor Room Script",
+              "target": "LB2/440.SCR"
+            },
+            {
+              "label": "Carrington Office Script",
+              "target": "LB2/420.SCR"
+            },
+            {
+              "label": "Library Script",
+              "target": "LB2/230.SCR"
+            }
+          ],
+          "related": [
+            "p4-01-wattney-little-accessibility"
+          ]
+        },
+        {
+          "id": "p1-04-memory-check-error",
+          "title": "P1-04: Memory Check Error on 'About' Screen in Act 2",
+          "summary": "Repairs memory calculation logic to prevent erroneous out-of-memory warnings in Act 2.",
+          "tags": [
+            "memory",
+            "act-2",
+            "p1"
+          ],
+          "what": "Fixes the bug where clicking 'About' in Act 2 displays 'There is not enough memory available right now to show the about screen' despite abundant heap and hunk memory.",
+          "how": [
+            "Inspect aboutCode method in Script 0 (0.SCR) and 0.MSG string 10.",
+            "Locate the memory check condition comparing (MemoryInfo FreeHunk) against an inflated threshold constant.",
+            "Correct the threshold comparison to reflect true memory requirements, or bypass the check when running under modern interpreters with expanded memory pools."
+          ],
+          "why": "The warning creates false alarm for players, falsely suggesting memory leaks or imminent system crashes when in reality memory is entirely sufficient.",
+          "evidence": [
+            {
+              "label": "Main Game Script",
+              "target": "LB2/0.SCR"
+            },
+            {
+              "label": "System Message Resource",
+              "target": "LB2/0.MSG"
+            },
+            {
+              "label": "About Screen Script",
+              "target": "LB2/13.SCR"
+            }
+          ],
+          "related": [
+            "p1-01-ui-interrogation"
+          ]
+        },
+        {
+          "id": "p1-05-animation-scaling-glitches",
+          "title": "P1-05: Graphical & Animation Glitch Corrections",
+          "summary": "Fixes characters walking through closed doors, sprite scaling jumps, and actor cutscene collisions.",
+          "tags": [
+            "graphics",
+            "animation",
+            "collision",
+            "p1"
+          ],
+          "what": "Corrects pathfinding and obstacle polygons so Wolf, Olympia, and the Countess do not clip through closed doors; fixes Laura's sprite scaler during the chase and approaching the headdress; eliminates Steve cutscene collision overlap.",
+          "how": {
+            "lead": "Applies room geometry and actor priority corrections:",
+            "points": [
+              "Door clipping: In door controller scripts (Room 440, Room 420), dynamically insert obstacle polygons when doors close and remove them only when fully open.",
+              "Laura scaling: In chase rooms (Room 520, Room 550) and Egypt gallery (Room 450, Room 480), recalculate (ego setScaler: Scaler maxScale minScale maxVal minVal) parameters to eliminate abrupt sprite size jumps.",
+              "Steve cutscene: Adjust actor movement coordinates and setPri priority layers in Script 230 to prevent character models walking through one another."
+            ]
+          },
+          "why": "Visual bugs where characters phase through solid oak doors or distort in size break visual immersion and compromise the presentation quality of the game.",
+          "evidence": [
+            {
+              "label": "Armor Room Door Script",
+              "target": "LB2/440.SCR"
+            },
+            {
+              "label": "Gallery Script",
+              "target": "LB2/450.SCR"
+            },
+            {
+              "label": "Chase Script",
+              "target": "LB2/520.SCR"
+            }
+          ],
+          "related": [
+            "p1-06-art-deco-preservation",
+            "p3-06-npc-wander-stabilization"
+          ]
+        },
+        {
+          "id": "p1-06-art-deco-preservation",
+          "title": "P1-06: Visual Fidelity & Floppy Art Deco Asset Preservation",
+          "summary": "Preserves original hand-painted brushstroke artwork from the floppy release.",
+          "tags": [
+            "visuals",
+            "art-deco",
+            "assets",
+            "p1"
+          ],
+          "what": "Protects and maintains the original high-resolution brushstroke textures found in floppy release backgrounds (such as the newsroom desk) which were degraded by color reduction in subsequent CD releases.",
+          "how": [
+            "Extract and catalogue original PIC resources from LB2 floppy RESOURCE.000.",
+            "Verify that no lossy re-quantization or dither compression is applied to picture palettes or view cels.",
+            "Audit background rendering in Room 100/110 (Newsroom) to confirm full preservation of original brush strokes."
+          ],
+          "why": "The hand-painted 256-color art deco aesthetic is a defining artistic achievement of Laura Bow II. Preserving the floppy assets delivers the authentic visual vision of the art director.",
+          "evidence": [
+            {
+              "label": "Resource Archive 0",
+              "target": "LB2/RESOURCE.000"
+            },
+            {
+              "label": "Newsroom Room Script",
+              "target": "LB2/0.SCR"
+            }
+          ],
+          "related": [
+            "floppy-base-architecture",
+            "p1-05-animation-scaling-glitches"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-2-narrative-dialogue",
+      "title": "Phase 2: Narrative Coherence and Dialogue Accessibility",
+      "description": "Phase 2 ensures narrative continuity: providing secondary notebook entries for missable character names, fixing confrontation timing for the pocket watch, restoring murder reaction dialogues, removing historical anachronisms, and ensuring character consistency.",
+      "entries": [
+        {
+          "id": "p2-01-notebook-fallback-triggers",
+          "title": "P2-01: Inaccessible Plot Information & Notebook Fallback Triggers",
+          "summary": "Adds secondary triggers for key suspects (Najir, Miklo, Countess) so missed Act 1 dialogue does not lock out interrogations.",
+          "tags": [
+            "narrative",
+            "notebook",
+            "interrogation",
+            "p2"
+          ],
+          "what": "Ensures that key suspect names (Najir, Miklo, Countess) are added to Laura's notebook in Act 2 even if the player failed to trigger specific optional conversations in Act 1.",
+          "how": [
+            "In Act 2 entry initialization (Room 230 init method), check whether flags fKnowsNajir, fKnowsMiklo, and fKnowsCountess are set.",
+            "If unset, trigger automatic registration via guest list / party encounter logic and append corresponding entries into the notebook list (Script 13).",
+            "Add informative observation messages explaining Laura learning their names from the museum guest register."
+          ],
+          "why": "Missing a single optional prompt in the Act 1 office permanently locked players out of questioning museum guests in subsequent acts, creating an unfair narrative dead-end.",
+          "evidence": [
+            {
+              "label": "Notebook Controller",
+              "target": "LB2/13.SCR"
+            },
+            {
+              "label": "Act 2 Reception Script",
+              "target": "LB2/230.SCR"
+            }
+          ],
+          "related": [
+            "p1-01-ui-interrogation",
+            "p2-05-contextual-dialogue-logic"
+          ]
+        },
+        {
+          "id": "p2-02-pocket-watch-confrontation",
+          "title": "P2-02: Pocket Watch Confrontation Timing & Armor Room Lockout Adjustment",
+          "summary": "Adjusts item lockout timing so the pocket watch can be retrieved and shown to the Countess in the Armor Room.",
+          "tags": [
+            "puzzle",
+            "narrative",
+            "armor-room",
+            "p2"
+          ],
+          "what": "Revises item pickup availability and rendezvous gating so Laura can obtain the pocket watch in time to confront the Countess during her secret Armor Room meeting with Little/Ziggy.",
+          "how": {
+            "lead": "Modifies condition logic in Room 440 (440.SCR, sMeetingNo2) and the watch location script:",
+            "points": [
+              "Remove premature lockout flags preventing the pocket watch from being taken from Carrington's office prior to meeting trigger.",
+              "Adjust sMeetingNo2 script timing to allow player entrance with watch in inventory.",
+              "In Countess doVerb handler, wire the vWatch case to trigger the dramatic confrontational dialogue branch."
+            ]
+          },
+          "why": "The Armor Room confrontation contains crucial narrative revelations, but the original script's strict item availability window made triggering it nearly impossible.",
+          "evidence": [
+            {
+              "label": "Armor Room Script",
+              "target": "LB2/440.SCR"
+            },
+            {
+              "label": "Armor Room Heap",
+              "target": "LB2/440.HEP"
+            }
+          ],
+          "related": [
+            "p2-03-murder-dialogue-assets",
+            "p2-07-dagger-discovery-reactions"
+          ]
+        },
+        {
+          "id": "p2-03-murder-dialogue-assets",
+          "title": "P2-03: Murder Reaction Restoration & Text-First Voice Architecture",
+          "summary": "Restores murder reaction dialogue via text message lumps, omitting insensitive CD voice tracks while preserving hooks for future custom re-recordings.",
+          "tags": [
+            "dialogue",
+            "murder-investigation",
+            "p2"
+          ],
+          "what": "Activates inaccessible dialogue branches in MSG message resources where characters react to discovered murders (O'Reilly discussing Ziggy's or Carrington's death) and death messages. Explicitly omits the culturally insensitive CD voice acting tracks, focusing purely on high-fidelity text while maintaining SCI audio sync hooks for future custom recordings.",
+          "how": {
+            "lead": "Restores text message lumps in RESOURCE.MSG and talker dispatchers (Script 448, Script 454):",
+            "points": [
+              "Update topic interrogation case switches in O'Reilly and museum guest talker scripts.",
+              "Wire homicide flags (fZiggyDead, fCarringtonDead) to custom text responses rather than default dismissal messages.",
+              "Retain SCI talker sync cue hooks in message resources without referencing legacy CD RESOURCE.AUD lumps, allowing new voice files to be dropped in seamlessly later."
+            ]
+          },
+          "why": "The original 1993 CD voice performances were widely criticized for insensitive caricatures and uneven delivery. Focusing strictly on text in the floppy release preserves the authentic noir mystery tone while establishing a clean foundation for future voice talent.",
+          "evidence": [
+            {
+              "label": "O'Reilly Encounter Script",
+              "target": "LB2/448.SCR"
+            },
+            {
+              "label": "Corridor Script",
+              "target": "LB2/454.SCR"
+            },
+            {
+              "label": "Resource Messages",
+              "target": "LB2/RESOURCE.MSG"
+            }
+          ],
+          "related": [
+            "p2-07-dagger-discovery-reactions",
+            "p3-06-npc-wander-stabilization"
+          ]
+        },
+        {
+          "id": "p2-04-narrative-anachronisms",
+          "title": "P2-04: Narrative Anachronisms Review and Historical Correction",
+          "summary": "Replaces post-1926 references with era-appropriate 1920s equivalents.",
+          "tags": [
+            "writing",
+            "historical-accuracy",
+            "p2"
+          ],
+          "what": "Corrects dialogue strings containing historical anachronisms that contradict the Spring 1926 setting, specifically references to Pippi Longstocking (1945), Transatlantic Telephone Calls (1927), and clarifies Hemingway's The Sun Also Rises.",
+          "how": [
+            "Using SCI Companion Message Editor, locate message tuples in RESOURCE.MSG and loose .MSG files.",
+            "Replace 'Pippi Longstocking' with period-authentic tomboy literary reference (e.g., 'Rebecca of Sunnybrook Farm' or 'Pollyanna').",
+            "Replace commercial 'Transatlantic Telephone Call' with 'transatlantic radio test' or 'transatlantic cable message'.",
+            "Clarify The Sun Also Rises dialogue to reference its contemporary serialization / Paris draft circles in early 1926."
+          ],
+          "why": "The 1926 period setting is central to the game's atmosphere; glaring anachronisms take observant players out of the historical mystery.",
+          "evidence": [
+            {
+              "label": "System Messages",
+              "target": "LB2/0.MSG"
+            },
+            {
+              "label": "Resource Messages",
+              "target": "LB2/RESOURCE.MSG"
+            }
+          ],
+          "related": [
+            "p4-02-evidence-red-herrings"
+          ]
+        },
+        {
+          "id": "p2-05-contextual-dialogue-logic",
+          "title": "P2-05: Contextual Dialogue Errors & Premature Familiarity",
+          "summary": "Fixes dialogue where Laura references characters she has not yet met.",
+          "tags": [
+            "dialogue",
+            "logic-flags",
+            "p2"
+          ],
+          "what": "Corrects dialogue routines where Laura speaks as if she already knows characters (e.g., Dr. Smith) or has met them before formal introductions have occurred.",
+          "how": [
+            "Add acquaintance boolean flags (fMetDrSmith, fMetCountess, fMetHeimlich) to global flag arrays.",
+            "Wrap name-specific dialogue branches in (if (Btst fMetCharacter) ...) checks.",
+            "Provide neutral introductory dialogue branches ('Excuse me, sir...', 'Pardon me, madame...') when unacquainted."
+          ],
+          "why": "Laura demonstrating psychic foreknowledge of suspect identities before meeting them breaks narrative continuity and player agency.",
+          "evidence": [
+            {
+              "label": "Global Game Script",
+              "target": "LB2/0.SCR"
+            },
+            {
+              "label": "Office Script",
+              "target": "LB2/420.SCR"
+            }
+          ],
+          "related": [
+            "p2-01-notebook-fallback-triggers",
+            "p2-06-steve-romance-consistency"
+          ]
+        },
+        {
+          "id": "p2-06-steve-romance-consistency",
+          "title": "P2-06: Steve & Laura Character Consistency & Romance Flagging",
+          "summary": "Gates Laura's jealousy and Steve's romantic banter behind Act 1 conversation completion.",
+          "tags": [
+            "character",
+            "dialogue",
+            "flags",
+            "p2"
+          ],
+          "what": "Ensures that Laura's romantic jealousy and Steve's comments about attending the party to see her only trigger if the player actually conversed with Steve in Act 1.",
+          "how": [
+            "Set flag fTalkedToSteveAct1 when player exhausts dialogue with Steve in Room 100/110.",
+            "In Museum party scripts (Room 230, Room 440), gate Steve romantic quips and Laura jealousy monologues behind (Btst fTalkedToSteveAct1).",
+            "If unset, route to professional acquaintance dialogue appropriate for coworkers."
+          ],
+          "why": "If Laura ignored Steve completely during the prologue, sudden intense jealousy at the museum party appears irrational and unmotivated.",
+          "evidence": [
+            {
+              "label": "Newsroom Script",
+              "target": "LB2/0.SCR"
+            },
+            {
+              "label": "Museum Reception Script",
+              "target": "LB2/230.SCR"
+            }
+          ],
+          "related": [
+            "p2-05-contextual-dialogue-logic"
+          ]
+        },
+        {
+          "id": "p2-07-dagger-discovery-reactions",
+          "title": "P2-07: Dagger Discovery Reaction & Inventory Hand-off",
+          "summary": "Adds meaningful character reactions to seeing the dagger and fixes inventory removal upon giving it to O'Reilly.",
+          "tags": [
+            "inventory",
+            "dagger",
+            "scripting",
+            "p2"
+          ],
+          "what": "Characters respond with genuine shock, fear, or suspicion when presented with the actual Dagger of Amon Ra; giving the dagger to Officer O'Reilly correctly removes it from Laura's inventory.",
+          "how": {
+            "lead": "Updates doVerb handlers across museum actors for verb vDagger:",
+            "points": [
+              "Replace generic dismissal responses with tailored dialogue reflecting the suspect's guilt, fear, or greed.",
+              "In O'Reilly's doVerb handler, execute (ego put: iDagger) and set flag fGivenDaggerToOReilly.",
+              "Update Laura's inventory list and icon bar to immediately reflect item surrender."
+            ]
+          },
+          "why": "Finding the titular stolen relic is the central objective of the mystery; suspects ignoring it breaks narrative logic, and retaining the dagger after handing it to police causes item duplication glitches.",
+          "evidence": [
+            {
+              "label": "Inventory Script",
+              "target": "LB2/20.SCR"
+            },
+            {
+              "label": "O'Reilly Script",
+              "target": "LB2/448.SCR"
+            }
+          ],
+          "related": [
+            "p4-04-quiz-dagger-decoupling"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-3-gameplay-puzzles",
+      "title": "Phase 3: Gameplay, Puzzles, and Progression Logic Refinement",
+      "description": "Phase 3 resolves gameplay design flaws: preventing permanent item loss for Act 5 progression, redesigning the snake oil refill system, smoothing act pacing, adding fair warnings before instant death zones, and stabilizing NPC movement.",
+      "entries": [
+        {
+          "id": "p3-01-dead-man-walking-prevention",
+          "title": "P3-01: Dead Man Walking Prevention (Act 5 Critical Items)",
+          "summary": "Guarantees items critical for Act 5 survival (Wire Cutters, Snake Oil, Cheese) cannot be permanently missed.",
+          "tags": [
+            "softlock",
+            "puzzles",
+            "act-5",
+            "p3"
+          ],
+          "what": "Prevents unwinnable game states in Act 5 by ensuring that Wire Cutters (for the pterodactyl wire), Snake Oil Refill, and Cheese (for the rats) are either non-droppable, auto-acquired, or available in backup locations within Act 5.",
+          "how": {
+            "lead": "Implements multi-layered softlock prevention:",
+            "points": [
+              "In Act 4 exit script, check inventory for critical items. If missing, prevent door seal and prompt Laura with an investigative hunch.",
+              "Spawn secondary emergency pickups in Act 5 maintenance areas (basement storage in Room 510).",
+              "Allow alternate puzzle solutions (e.g., using hairpin or chisel if wire cutters were missed)."
+            ]
+          },
+          "why": "Forcing players into an inescapable death in Act 5 due to an untelegraphed omission in Act 2 or 3 is the worst hallmark of retro adventure design.",
+          "evidence": [
+            {
+              "label": "Chase Area 1",
+              "target": "LB2/500.SCR"
+            },
+            {
+              "label": "Basement Room",
+              "target": "LB2/510.SCR"
+            },
+            {
+              "label": "Endgame Script",
+              "target": "LB2/550.SCR"
+            }
+          ],
+          "related": [
+            "p1-02-save-load-unrestricted",
+            "p3-02-snake-oil-refill-overhaul",
+            "p3-04-unfair-deaths-warnings"
+          ]
+        },
+        {
+          "id": "p3-02-snake-oil-refill-overhaul",
+          "title": "P3-02: Snake Oil Refill Mechanic & Inventory Feedback Overhaul",
+          "summary": "Adds clear inventory feedback for snake oil state, prevents invalid refills, and decouples basement dispenser from grapes.",
+          "tags": [
+            "inventory",
+            "puzzles",
+            "feedback",
+            "p3"
+          ],
+          "what": "Revamps the snake oil bottle mechanic: updates the inventory icon to visibly show empty vs full states, blocks refilling an already full bottle, makes the basement dispenser conspicuous, and removes the artificial dependency on picking up grapes.",
+          "how": [
+            "In Inventory Script 20 (20.SCR), assign multi-cel view for iSnakeOil (cel 0 = empty, cel 1 = full).",
+            "Add guard check in refill verb handler: (if snakeOilFull (Print 20 12) else ...).",
+            "In Room 510 (Basement), enhance dispenser hotspot bounds and remove (ego has: iGrapes) prerequisite from the oil barrel script."
+          ],
+          "why": "The snake oil puzzle was plagued by invisible state changes, arbitrary puzzle coupling, and misleading feedback, turning an essential survival item into an exercise in frustration.",
+          "evidence": [
+            {
+              "label": "Inventory Script",
+              "target": "LB2/20.SCR"
+            },
+            {
+              "label": "Basement Script",
+              "target": "LB2/510.SCR"
+            }
+          ],
+          "related": [
+            "p3-01-dead-man-walking-prevention"
+          ]
+        },
+        {
+          "id": "p3-03-pacing-eavesdropping-rebalance",
+          "title": "P3-03: Pacing, Diegetic Knowledge Gating & Contextual Activity Framework",
+          "summary": "Replaces the 14-eavesdropping requirement with a diegetic knowledge acquisition threshold and contextual museum puzzles.",
+          "tags": [
+            "pacing",
+            "acts",
+            "progression",
+            "p3"
+          ],
+          "what": "Expands Act 4 narrative flow and replaces Act 2's rigid 14-eavesdropping requirement with a diegetic knowledge acquisition threshold. The game advances to Act 3 as soon as Laura has uncovered the minimum necessary case context (suspect motives, alibis, party dynamics), supplemented by new contextual investigative tasks throughout the museum.",
+          "how": {
+            "lead": "Refactors progression state tracking in Script 0 and Room 230:",
+            "points": [
+              "Implement a diegetic knowledge bitmask in Script 0 tracking core suspect motives, alibis, and museum relationships.",
+              "Advance the museum clock once the minimum necessary context threshold is achieved through any combination of questioning, observation, or eavesdropping.",
+              "Introduce contextual museum activities (inspecting exhibit security, cross-referencing visitor logs) to give players meaningful detective agency rather than passive hallway waiting.",
+              "Flesh out Act 4 narrative encounters with remaining suspects before the chase trigger."
+            ]
+          },
+          "why": "Forcing players to wait for 14 arbitrary corridor eavesdrops makes Act 2 a passive slog. Gating progress behind diegetic understanding rewards genuine deductive reasoning and gives players purposeful things to do.",
+          "evidence": [
+            {
+              "label": "Main Controller",
+              "target": "LB2/0.SCR"
+            },
+            {
+              "label": "Museum Main Hall",
+              "target": "LB2/230.SCR"
+            }
+          ],
+          "related": [
+            "p1-01-ui-interrogation",
+            "p3-06-npc-wander-stabilization"
+          ]
+        },
+        {
+          "id": "p3-04-unfair-deaths-warnings",
+          "title": "P3-04: Unfair Deaths & Secret Passage Warning Mechanic",
+          "summary": "Adds a descriptive warning and look mechanic before entering the pitch-black secret passage in Olympia's office.",
+          "tags": [
+            "fair-play",
+            "player-death",
+            "secret-passage",
+            "p3"
+          ],
+          "what": "Prevents sudden unannounced death when walking toward the dark secret passage in Olympia's office by pausing Laura, displaying an ominous darkness warning, and requiring a conscious confirmation or light source.",
+          "how": [
+            "In Room 420/450 passage boundary polygon, replace instant sDie script trigger with a proximity cue.",
+            "If Laura does not possess an active light source, halt motion and print warning: 'It is pitch black inside. Walking blindly into the unknown would be fatal.'",
+            "Allow player to inspect with the Look or Eye icon to observe danger before stepping forward."
+          ],
+          "why": "Sudden untelegraphed insta-deaths violate core adventure game fairness principles, forcing trial-and-error play.",
+          "evidence": [
+            {
+              "label": "Olympia Office Script",
+              "target": "LB2/420.SCR"
+            },
+            {
+              "label": "Passage Script",
+              "target": "LB2/450.SCR"
+            }
+          ],
+          "related": [
+            "p1-02-save-load-unrestricted",
+            "p3-01-dead-man-walking-prevention"
+          ]
+        },
+        {
+          "id": "p3-05-act1-progression-simplification",
+          "title": "P3-05: Act 1 Progression Trigger Simplification",
+          "summary": "Simplifies the strict linear chain of events required to obtain the cab and dress in Act 1.",
+          "tags": [
+            "act-1",
+            "progression",
+            "puzzles",
+            "p3"
+          ],
+          "what": "Relaxes the rigid ordering dependencies in Act 1 (talking to Ziggy, using the baseball, visiting the docks) needed to secure the dirty taxi and the evening gown.",
+          "how": [
+            "Audit Act 1 state flags in Script 0 and Room 100/130 scripts.",
+            "Decouple taxi driver trigger from dock visit ordering so tasks can be completed in parallel.",
+            "Allow flexible acquisition paths for the evening dress and cab fare."
+          ],
+          "why": "Forcing a hyper-specific, unintuitive sequence of actions in an introductory act creates a poor first impression and frustrates new players before the mystery begins.",
+          "evidence": [
+            {
+              "label": "Act 1 Root Script",
+              "target": "LB2/0.SCR"
+            }
+          ],
+          "related": [
+            "p3-03-pacing-eavesdropping-rebalance"
+          ]
+        },
+        {
+          "id": "p3-06-npc-wander-stabilization",
+          "title": "P3-06: NPC Wander Mechanic Stabilization",
+          "summary": "Halts NPC movement during dialogues and extends character availability in Acts 3 and 4.",
+          "tags": [
+            "npcs",
+            "wandering",
+            "dialogue",
+            "p3"
+          ],
+          "what": "Stops NPCs from wandering off mid-conversation and disappearing while dialogue boxes are open; keeps critical characters like Officer O'Reilly accessible for questioning longer in Acts 3 and 4.",
+          "how": {
+            "lead": "Modifies actor wander and speech coordination in Script 90 and room scripts:",
+            "points": [
+              "In Talker / Dialog init, call (theNPC setMotion: 0) to freeze actor position.",
+              "On dialogue window dismissal, restore wander mover script (theNPC setMotion: Wander).",
+              "Adjust room wander tables in Acts 3 and 4 to retain key suspects in fixed or predictable room cycles."
+            ]
+          },
+          "why": "Having suspects walk away off-screen in the middle of crucial testimony breaks immersion and wastes player time tracking them down again.",
+          "evidence": [
+            {
+              "label": "Talker System Script",
+              "target": "LB2/90.SCR"
+            },
+            {
+              "label": "O'Reilly Hallway Script",
+              "target": "LB2/454.SCR"
+            }
+          ],
+          "related": [
+            "p1-01-ui-interrogation",
+            "p2-03-murder-dialogue-assets"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-4-mystery-grading",
+      "title": "Phase 4: Mystery, Grading, and Ending Logic",
+      "description": "Phase 4 fixes the detective grading system and endgame logic: clarifying Wattney Little clues, rewarding logical deduction for planted red herrings, aligning hint book claims with internal code, decoupling quiz answers from dagger ownership, and standardizing grading point divisors.",
+      "entries": [
+        {
+          "id": "p4-01-wattney-little-accessibility",
+          "title": "P4-01: Mystery Accessibility & Wattney Little Evidence Discovery",
+          "summary": "Provides clear clues to Wattney Little's role and police file contents without pixel hunting.",
+          "tags": [
+            "mystery",
+            "evidence",
+            "wattney-little",
+            "p4"
+          ],
+          "what": "Ensures that clues revealing the existence of conspirator Wattney Little and the contents of his police file are discoverable through prominent environmental features and dialogue rather than pixel hunting.",
+          "how": [
+            "In Room 420 (Carrington's office), enlarge the desk dossier hotspot and add a clear visual prompt.",
+            "Add dialogue hint in Act 3 from O'Reilly or Yvette mentioning a fugitive matching Little's description.",
+            "Register 'Wattney Little' in notebook upon inspecting the file, unlocking related coroner inquest questions."
+          ],
+          "why": "Wattney Little is essential to understanding the full conspiracy; obscuring his existence behind a single sub-pixel hotspot deprives thorough players of solving the crime.",
+          "evidence": [
+            {
+              "label": "Carrington Office Script",
+              "target": "LB2/420.SCR"
+            },
+            {
+              "label": "Notebook Script",
+              "target": "LB2/13.SCR"
+            }
+          ],
+          "related": [
+            "p1-03-hotspot-pixel-hunts",
+            "p4-03-hint-book-contradictions"
+          ]
+        },
+        {
+          "id": "p4-02-evidence-red-herrings",
+          "title": "P4-02: Evidence Validity, Red Herrings & Inquest Reconciliation",
+          "summary": "Integrates planted red-herring evidence logically into the inquest without penalizing players.",
+          "tags": [
+            "inquest",
+            "evidence",
+            "red-herrings",
+            "p4"
+          ],
+          "what": "Reconciles physical evidence planted by perpetrators (such as the Ankh medallion, Yvette's appointment schedule, and multiple footprints) so players who discover them receive credit for thorough investigation rather than point deductions.",
+          "how": {
+            "lead": "Modifies coroner inquest evaluation in Script 700 / Script 720:",
+            "points": [
+              "Acknowledge planted physical evidence in coroner dialogue as deliberate framing attempts.",
+              "Award investigative insight points when player identifies the false leads as plant operations.",
+              "Eliminate scoring penalties for presenting verified physical items collected during play."
+            ]
+          },
+          "why": "Penalizing players for discovering physical clues that the game explicitly placed at crime scenes feels arbitrary and contradicts good mystery game design.",
+          "evidence": [
+            {
+              "label": "Coroner Inquest Script",
+              "target": "LB2/700.SCR"
+            },
+            {
+              "label": "Ending Scoring Script",
+              "target": "LB2/720.SCR"
+            }
+          ],
+          "related": [
+            "p4-03-hint-book-contradictions",
+            "p4-05-grading-score-standardization"
+          ]
+        },
+        {
+          "id": "p4-03-hint-book-contradictions",
+          "title": "P4-03: Hint Book Contradictions & Best Ending Requirement Alignment",
+          "summary": "Aligns internal ending logic with official hint book criteria and narrative necessity.",
+          "tags": [
+            "endings",
+            "hint-book",
+            "super-sleuth",
+            "p4"
+          ],
+          "what": "Corrects internal code logic for achieving the highest 'Super Sleuth' ending so requirements match narrative sense and Sierra's published hint book, ensuring missable items (Red Hair, Bifocals) and critical evidence (Police File) are evaluated fairly.",
+          "how": [
+            "Audit ending qualification method in Script 700 and 720.",
+            "Harmonize the required evidence checklist with actual clue availability.",
+            "Explicitly check for Police File discovery as a positive qualification for highest rank."
+          ],
+          "why": "Discrepancies between internal code checks and Sierra's published hints caused confusion for decades, preventing dedicated sleuths from earning the best ending.",
+          "evidence": [
+            {
+              "label": "Inquest Evaluation Script",
+              "target": "LB2/700.SCR"
+            },
+            {
+              "label": "Ending Controller",
+              "target": "LB2/720.SCR"
+            }
+          ],
+          "related": [
+            "p4-01-wattney-little-accessibility",
+            "p4-05-grading-score-standardization"
+          ]
+        },
+        {
+          "id": "p4-04-quiz-dagger-decoupling",
+          "title": "P4-04: Quiz / Dagger Possession Logic Decoupling",
+          "summary": "Decouples coroner questionnaire results from physical possession of the Dagger of Amon Ra.",
+          "tags": [
+            "endings",
+            "dagger",
+            "quiz-logic",
+            "p4"
+          ],
+          "what": "Fixes the logic bug that falsely claimed Laura lost the Dagger of Amon Ra in the ending newspaper if the player answered theft questions incorrectly, even when Laura physically held or handed in the dagger.",
+          "how": [
+            "In Script 720 (Ending epilogue), inspect flag evaluation for newspaper headline generation.",
+            "Decouple headline string selection from quizScore variable; instead, bind it directly to (ego has: iDagger) or fGivenDaggerToOReilly.",
+            "Only report the dagger as missing if Laura genuinely failed to recover the artifact in Act 5."
+          ],
+          "why": "Failing an interrogation quiz question should not magically retroactively delete an item physically present in Laura's possession.",
+          "evidence": [
+            {
+              "label": "Epilogue Script",
+              "target": "LB2/720.SCR"
+            },
+            {
+              "label": "Inventory Script",
+              "target": "LB2/20.SCR"
+            }
+          ],
+          "related": [
+            "p2-07-dagger-discovery-reactions",
+            "p4-05-grading-score-standardization"
+          ]
+        },
+        {
+          "id": "p4-05-grading-score-standardization",
+          "title": "P4-05: Grading and Scoring System Standardization",
+          "summary": "Standardizes point divisors across all acts and fixes the false F-grade on game startup.",
+          "tags": [
+            "scoring",
+            "grades",
+            "bug-fix",
+            "p4"
+          ],
+          "what": "Standardizes the point denominator used in grade calculations across all acts so percentage ranks accurately reflect player accomplishments, and fixes the bug displaying an initial F grade at the start of the game.",
+          "how": {
+            "lead": "Modifies scoring calculations in Script 0 and Script 780:",
+            "points": [
+              "Establish a consistent total possible points constant (TOTAL_POINTS) referenced by all act divisors.",
+              "Recalculate grade brackets (A, B, C, D, F) based on true percentage of achievable points.",
+              "Initialize currentGrade variable to unranked / null at game launch in Script 0 init, suppressing false startup F notifications."
+            ]
+          },
+          "why": "Erroneous math penalized players unfairly regardless of thoroughness, and flashing an F grade upon starting a fresh game was bewildering and demotivating.",
+          "evidence": [
+            {
+              "label": "Global Score Keeper",
+              "target": "LB2/0.SCR"
+            },
+            {
+              "label": "Final Grade Script",
+              "target": "LB2/780.SCR"
+            }
+          ],
+          "related": [
+            "p4-02-evidence-red-herrings",
+            "p4-03-hint-book-contradictions",
+            "p4-06-non-essential-quiz-questions"
+          ]
+        },
+        {
+          "id": "p4-06-non-essential-quiz-questions",
+          "title": "P4-06: Non-Essential Quiz Questions Delineation",
+          "summary": "Delineates required murder questions from optional trivia (Art Theft, High Priest) in inquest scoring.",
+          "tags": [
+            "inquest",
+            "scoring",
+            "clarity",
+            "p4"
+          ],
+          "what": "Clearly distinguishes core murder inquest questions from non-essential secondary trivia (such as Art Theft or High Priest identities) and eliminates points for non-essential questions that do not affect the ending.",
+          "how": [
+            "In Script 700 questionnaire UI, group questions into 'Coroner's Homicide Inquest' (required) and 'Department of Antiquities Inquiries' (optional bonus).",
+            "Adjust scoring accumulator so ending tier determination depends strictly on solving the homicides.",
+            "Display clear feedback explaining which questions determine detective rank."
+          ],
+          "why": "Conflating secondary lore trivia with murder culpability confused players regarding what evidence was truly vital to completing the case.",
+          "evidence": [
+            {
+              "label": "Inquest Dialogue Script",
+              "target": "LB2/700.SCR"
+            },
+            {
+              "label": "Endgame Evaluation Script",
+              "target": "LB2/720.SCR"
+            }
+          ],
+          "related": [
+            "p4-03-hint-book-contradictions",
+            "p4-05-grading-score-standardization"
+          ]
+        }
+      ]
+    }
+  ]
+}
