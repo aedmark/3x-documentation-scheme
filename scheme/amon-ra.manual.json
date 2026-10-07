@@ -393,19 +393,19 @@
           ],
           "what": "Ensures that key suspect names (Najir, Miklo, Countess) are added to Laura's notebook in Act 2 even if the player failed to trigger specific optional conversations in Act 1.",
           "how": [
-            "In Act 2 entry initialization (Room 230 init method), check whether flags fKnowsNajir, fKnowsMiklo, and fKnowsCountess are set.",
-            "If unset, trigger automatic registration via guest list / party encounter logic and append corresponding entries into the notebook list (Script 13).",
-            "Add informative observation messages explaining Laura learning their names from the museum guest register."
+            "At museum benefit check-in (Script 335 / rm335.sc sGiveInvite state 5 and sExitNorth state 3), simulate consulting the guest register and register clues 263..272 (Steve, Ziggy, Heimlich, Yvette, Ernie, Rameses, Countess, Olympia, Tut, Watney) via addCluesCode (Script 21).",
+            "In RotundaRgn.sc (Script 93), intercept Look and Talk verbs in doVerb (sel_300:) across all 11 rotunda characters to ensure examining or speaking to any character registers their notebook entry immediately.",
+            "Rely on addCluesCode idempotence to guarantee no duplicate notebook entries are ever created."
           ],
-          "why": "Missing a single optional prompt in the Act 1 office permanently locked players out of questioning museum guests in subsequent acts, creating an unfair narrative dead-end.",
+          "why": "Missing a single optional dialogue branch in Act 1 permanently locked players out of questioning museum guests about key figures in subsequent acts, creating an unfair narrative dead-end.",
           "evidence": [
             {
-              "label": "Notebook Controller",
-              "target": "LB2/13.SCR"
+              "label": "Museum Entrance Check-in",
+              "target": "LB2/335.SCR"
             },
             {
-              "label": "Act 2 Reception Script",
-              "target": "LB2/230.SCR"
+              "label": "Rotunda Region Controller",
+              "target": "LB2/93.SCR"
             }
           ],
           "related": [
