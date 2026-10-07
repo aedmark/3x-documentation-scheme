@@ -6,7 +6,7 @@ The 3x scheme turns a project into an explorable manual by requiring every docum
 2. **How** does it work? — mechanism, data flow, dependencies, and failure paths.
 3. **Why** is it designed this way? — intent, trade-offs, constraints, and alternatives.
 
-`index.html` and `commands.html` are the original FractalOS manuals from which the scheme was extracted. The reusable implementation lives in `scheme/` and `scripts/`; it does not modify those originals.
+`index.html` explains the scheme itself, while `commands.html` is its CLI and source-format reference. Both pages are generated from reusable sources in `scheme/`.
 
 ## Quick start
 
@@ -27,6 +27,13 @@ To explore the included example:
 
 ```bash
 python3 scripts/manual.py build scheme/example.manual.json --output /tmp/3x-example.html
+```
+
+To regenerate this repository's public documentation after editing its sources:
+
+```bash
+python3 scripts/manual.py build scheme/3x.manual.json --output index.html
+python3 scripts/manual.py build scheme/reference.manual.json --output commands.html
 ```
 
 ## Adapt it dynamically
@@ -115,9 +122,11 @@ python3 scripts/manual.py check docs/project.manual.json
 
 - `scripts/manual.py` — initialize, validate, build, and watch manuals.
 - `scheme/manual.schema.json` — machine-readable JSON Schema.
-- `scheme/example.manual.json` — concise reference source demonstrating all supported fields.
-- `manual.css` — original FractalOS stylesheet, retained with the original manuals.
-- `index.html`, `commands.html` — original project-specific artifacts.
+- `scheme/3x.manual.json` — source for the main scheme manual.
+- `scheme/reference.manual.json` — source for the CLI and format reference.
+- `scheme/example.manual.json` — fictional project demonstrating all supported fields.
+- `index.html`, `commands.html` — generated, project-neutral documentation.
+- `manual.css` — optional legacy-compatible stylesheet for hand-authored pages.
 
 ## License
 

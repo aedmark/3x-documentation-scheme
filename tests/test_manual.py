@@ -28,6 +28,18 @@ class ManualTests(unittest.TestCase):
         self.assertIn("tests/offline-edit.spec.ts", output)
         self.assertIn("What it does", output)
 
+    def test_public_manual_sources_validate(self):
+        for filename in ("3x.manual.json", "reference.manual.json"):
+            source = json.loads((ROOT / "scheme" / filename).read_text(encoding="utf-8"))
+            expanded = manual.expand_placeholders(copy.deepcopy(source), source)
+            errors, warnings = manual.validate(expanded)
+            self.assertEqual(errors, [], filename)
+            self.assertEqual(warnings, [], filename)
+
+    def test_safe_relative_links_render(self):
+        self.assertIn('href="commands.html"', manual.inline("[Reference](commands.html)"))
+        self.assertNotIn("href=", manual.inline("[Unsafe](javascript:alert(1))"))
+
     def test_duplicate_ids_are_errors(self):
         data = copy.deepcopy(self.example)
         data["sections"][0]["entries"][1]["id"] = "local-notebooks"

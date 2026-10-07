@@ -1,0 +1,203 @@
+{
+  "$schema": "./manual.schema.json",
+  "project": {
+    "name": "3x Documentation Scheme",
+    "short_name": "3x Docs",
+    "version": "1.0.0",
+    "repository": ""
+  },
+  "manual": {
+    "title": "The 3x Documentation Scheme",
+    "subtitle": "A project-neutral system for explaining what, how, and why",
+    "description": "Use one structured source to create a searchable project manual for people and agents. See the [CLI and format reference](commands.html) for exact commands and fields.",
+    "badges": ["Schema-driven", "Agent-readable", "Zero dependencies", "Standalone HTML"],
+    "footer": "3x Documentation Scheme {{project.version}} · Adapt the model; keep the reasoning visible."
+  },
+  "theme": {
+    "accent": "#38bdf8",
+    "accent_secondary": "#a855f7",
+    "icon": "△"
+  },
+  "sections": [
+    {
+      "id": "core-model",
+      "title": "The Core Model",
+      "description": "The scheme documents observable behavior, implementation, and design intent as one reviewable unit.",
+      "entries": [
+        {
+          "id": "three-question-contract",
+          "title": "The three-question contract",
+          "summary": "Every subject answers What, How, and Why in that order.",
+          "tags": ["foundation", "reader contract"],
+          "what": "Provides a repeatable shape for documenting a component, command, workflow, policy, or architectural decision.",
+          "how": [
+            "What defines behavior, inputs, outputs, guarantees, and visible failure modes.",
+            "How traces implementation, data flow, dependencies, and operational boundaries.",
+            "Why records constraints, trade-offs, intent, and meaningful alternatives."
+          ],
+          "why": "Readers usually need all three perspectives but at different moments. Keeping them adjacent prevents reference material from drifting away from implementation detail or design rationale.",
+          "evidence": [
+            {"label": "Content contract", "target": "scheme/manual.schema.json"},
+            {"label": "Example source", "target": "scheme/example.manual.json"}
+          ],
+          "related": ["manual-structure", "claim-quality"]
+        },
+        {
+          "id": "manual-structure",
+          "title": "Manual structure",
+          "summary": "Project metadata, presentation settings, sections, and entries remain separate but composable.",
+          "tags": ["information architecture", "schema"],
+          "what": "Organizes a manual into reader-oriented sections containing stable, linkable entries. Each entry can include a summary, synopsis, tags, evidence, and related-entry links in addition to its required triad.",
+          "how": {
+            "lead": "The JSON hierarchy is deliberately shallow:",
+            "points": [
+              "Project metadata supplies reusable identity and version values.",
+              "Manual metadata describes the document and its badges.",
+              "Sections create navigation groups and entries carry the actual explanations.",
+              "Theme values alter presentation without changing content."
+            ]
+          },
+          "why": "A predictable hierarchy is easy for humans to review, agents to generate, schemas to validate, and renderers to transform without parsing hand-authored HTML.",
+          "evidence": ["scheme/manual.schema.json", "scripts/manual.py"],
+          "related": ["three-question-contract", "dynamic-adaptation"]
+        }
+      ]
+    },
+    {
+      "id": "authoring",
+      "title": "Authoring a Manual",
+      "description": "Good 3x documentation begins with project discovery and treats uncertainty explicitly.",
+      "entries": [
+        {
+          "id": "scope-and-inventory",
+          "title": "Scope and inventory",
+          "summary": "Choose subjects by reader need, not merely by source-tree shape.",
+          "tags": ["planning", "audience"],
+          "what": "Identifies which capabilities, boundaries, workflows, policies, and decisions deserve entries and which audience the manual serves.",
+          "how": [
+            "Name the primary audience and the decisions they need to make.",
+            "Inventory user-visible capabilities and operational workflows.",
+            "Map architecture boundaries and consequential design decisions.",
+            "Group subjects into a learning path, then assign stable kebab-case IDs."
+          ],
+          "why": "Mirroring folders produces implementation indexes rather than useful manuals. Reader-oriented scope keeps the document navigable and avoids exhaustive but low-value function commentary.",
+          "evidence": ["README.md"],
+          "related": ["claim-quality", "maintenance-lifecycle"]
+        },
+        {
+          "id": "claim-quality",
+          "title": "Facts, inference, and rationale",
+          "summary": "Implementation claims require evidence; inferred rationale must be labeled.",
+          "tags": ["accuracy", "provenance"],
+          "what": "Separates observed project facts from interpretation so readers can judge confidence and trace important claims.",
+          "how": [
+            "Write What from behavior that can be demonstrated or tested.",
+            "Write How from inspected source, configuration, runtime behavior, and operational records.",
+            "Write Why from decision records or maintainer statements when available.",
+            "When intent is not recorded, say that the rationale is inferred and name the evidence supporting the inference."
+          ],
+          "why": "Plausible explanations are easy to invent and hard to detect later. Explicit provenance prevents a polished manual from becoming an authority for facts the project never established.",
+          "evidence": ["README.md", "scheme/manual.schema.json"],
+          "related": ["evidence-and-links", "validation"]
+        },
+        {
+          "id": "evidence-and-links",
+          "title": "Evidence and relationships",
+          "summary": "Entries expose their supporting artifacts and conceptual neighbors.",
+          "tags": ["traceability", "navigation"],
+          "what": "Attaches files, tests, decision records, commands, or URLs to claims and connects entries that readers commonly traverse together.",
+          "how": "Evidence accepts a path string or a labeled target object. Related entries use stable IDs that the validator checks and the renderer turns into local links.",
+          "why": "Traceability shortens verification and maintenance. Explicit relationships add useful navigation without forcing the section hierarchy to represent every conceptual connection.",
+          "evidence": ["scheme/manual.schema.json", "scripts/manual.py"],
+          "related": ["claim-quality", "validation"]
+        }
+      ]
+    },
+    {
+      "id": "adaptation",
+      "title": "Dynamic Adaptation",
+      "description": "The same content contract supports local writing, automated releases, CI checks, and agent-assisted maintenance.",
+      "entries": [
+        {
+          "id": "dynamic-adaptation",
+          "title": "Metadata and runtime overrides",
+          "summary": "Change shared values once or inject release-specific values during a build.",
+          "tags": ["automation", "configuration"],
+          "synopsis": "python3 scripts/manual.py build SOURCE --set project.version=2.0.0 --output index.html",
+          "what": "Resolves metadata placeholders throughout the document and permits scalar values to be overridden from the command line.",
+          "how": [
+            "Place a double-braced path such as `project.name` or `project.version` in textual fields.",
+            "The builder resolves placeholders against the source document before validation.",
+            "Each `--set PATH=VALUE` assignment updates an existing scalar before resolution."
+          ],
+          "why": "Versions, names, URLs, and theme values recur throughout documentation. Central values and build-time injection prevent repetitive edits and make release automation deterministic.",
+          "evidence": ["scripts/manual.py", "tests/test_manual.py"],
+          "related": ["manual-structure", "generation"]
+        },
+        {
+          "id": "validation",
+          "title": "Validation and visible gaps",
+          "summary": "Incomplete triads fail; weaker traceability remains visible as a warning.",
+          "tags": ["quality gate", "CI"],
+          "synopsis": "python3 scripts/manual.py check SOURCE",
+          "what": "Checks required structure, stable IDs, dimension content, recognized placeholder text, evidence shape, and related-entry targets.",
+          "how": "Structural defects and recognized unfinished-writing markers produce a nonzero exit. Missing evidence and unknown related IDs produce warnings that require judgment without blocking exploratory drafts.",
+          "why": "A manual should never silently present empty reasoning as complete. Separating errors from warnings preserves a firm minimum contract without pretending every quality concern can be decided mechanically.",
+          "evidence": ["scripts/manual.py", "tests/test_manual.py", "scheme/manual.schema.json"],
+          "related": ["claim-quality", "generation"]
+        },
+        {
+          "id": "generation",
+          "title": "Portable generation",
+          "summary": "One validated source becomes one searchable, responsive HTML file.",
+          "tags": ["HTML", "search", "print"],
+          "synopsis": "python3 scripts/manual.py build SOURCE --output manual.html",
+          "what": "Produces a standalone manual with navigation, full-text filtering, stable anchors, responsive triad cards, evidence disclosure, and print styles.",
+          "how": "The standard-library generator escapes content, applies a deliberately small inline notation, embeds CSS and JavaScript, and writes a dependency-free HTML document.",
+          "why": "A single artifact is easy to preview locally, attach to a release, publish on any static host, archive, or inspect in restricted environments.",
+          "evidence": ["scripts/manual.py", "tests/test_manual.py"],
+          "related": ["dynamic-adaptation", "maintenance-lifecycle"]
+        }
+      ]
+    },
+    {
+      "id": "operations",
+      "title": "Keeping It Alive",
+      "description": "The scheme is most useful when documentation evolves with the project rather than following it later.",
+      "entries": [
+        {
+          "id": "maintenance-lifecycle",
+          "title": "Maintenance lifecycle",
+          "summary": "Review documentation in the same change that alters documented behavior or rationale.",
+          "tags": ["workflow", "governance"],
+          "what": "Treats manual source as maintained project material with validation in local workflows and continuous integration.",
+          "how": [
+            "Run `check` in CI for every proposed change.",
+            "Use `watch` while restructuring or writing several entries.",
+            "Update What when contracts change, How when implementation boundaries move, and Why when constraints or decisions change.",
+            "Preserve entry IDs during title edits and review the built artifact before release."
+          ],
+          "why": "Documentation drift is primarily a workflow problem. Co-locating review and enforcing the minimum contract makes stale reasoning easier to catch when relevant context is still available.",
+          "evidence": ["README.md", "scripts/manual.py"],
+          "related": ["scope-and-inventory", "agent-workflow"]
+        },
+        {
+          "id": "agent-workflow",
+          "title": "Agent adaptation workflow",
+          "summary": "Agents use the same schema, evidence expectations, and validation gate as human authors.",
+          "tags": ["agents", "handoff"],
+          "what": "Gives coding and documentation agents an explicit protocol for discovering, drafting, checking, and handing off a project manual.",
+          "how": [
+            "Read the schema and the project sources in scope.",
+            "Inventory behavior and architecture before drafting entries.",
+            "Cite implementation-specific claims and label inferred rationale.",
+            "Preserve stable IDs, run validation and generation, then report warnings requiring human judgment."
+          ],
+          "why": "Structured outputs reduce ambiguity between tools and sessions. Using the human workflow also keeps agent-produced documentation reviewable instead of creating a separate, opaque automation path.",
+          "evidence": ["README.md", "scheme/manual.schema.json", "tests/test_manual.py"],
+          "related": ["claim-quality", "maintenance-lifecycle"]
+        }
+      ]
+    }
+  ]
+}

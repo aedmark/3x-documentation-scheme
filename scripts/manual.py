@@ -241,7 +241,12 @@ def inline(text: Any) -> str:
 
     def link(match: re.Match[str]) -> str:
         label, target = match.group(1), html.unescape(match.group(2))
-        if not re.match(r"^(?:https?://|mailto:)", target, re.IGNORECASE):
+        safe_link = re.match(
+            r"^(?:https?://|mailto:|#[a-z0-9_-]+$|(?:\.\.?/)?[a-z0-9][a-z0-9._/-]*(?:#[a-z0-9_-]+)?$)",
+            target,
+            re.IGNORECASE,
+        )
+        if not safe_link:
             return match.group(0)
         safe_target = html.escape(target, quote=True)
         return stash(f'<a href="{safe_target}" rel="noreferrer">{label}</a>')
