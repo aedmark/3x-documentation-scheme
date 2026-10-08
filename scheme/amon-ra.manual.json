@@ -439,8 +439,12 @@
               "target": "LB2/440.SCR"
             },
             {
-              "label": "Armor Room Heap",
-              "target": "LB2/440.HEP"
+              "label": "Countess Meeting Script",
+              "target": "LB2/441.SCR"
+            },
+            {
+              "label": "Trigger and Clock Script",
+              "target": "LB2/22.SCR"
             }
           ],
           "related": [
