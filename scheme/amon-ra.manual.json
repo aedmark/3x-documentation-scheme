@@ -463,26 +463,36 @@
           ],
           "what": "Activates inaccessible dialogue branches in MSG message resources where characters react to discovered murders (O'Reilly discussing Ziggy's or Carrington's death) and death messages. Explicitly omits the culturally insensitive CD voice acting tracks, focusing purely on high-fidelity text while maintaining SCI audio sync hooks for future custom recordings.",
           "how": {
-            "lead": "Restores text message lumps in RESOURCE.MSG and talker dispatchers (Script 448, Script 454):",
+            "lead": "Synchronizes discovery cutscene flags and interrogation switch dispatchers across MuseumRgn (Script 90), RotundaRgn (Script 93), aHeimlich (Script 32), and aRameses (Script 36):",
             "points": [
-              "Update topic interrogation case switches in O'Reilly and museum guest talker scripts.",
-              "Wire homicide flags (fZiggyDead, fCarringtonDead) to custom text responses rather than default dismissal messages.",
+              "Set narrative homicide flags (171 & 134 in rm630, 143 in rm435, 158 in rm420, 161 in rm500, 165 in rm525, 155 in rm620) upon corpse and clue discovery.",
+              "Update suspect interrogation case switches (topics 258, 259, 264, 266, 267, 780) with dual-tier fallback checks against physical discovery flags.",
+              "Wire missing topic 269 case in O'Riley (MuseumRgn) to activate authored dialogue sequence 70 for Countess Waldorf-Carlton's murder.",
+              "Enable Ziggy's severed head exhibit display in room 490 via dual-tier flag 143/72 check.",
               "Retain SCI talker sync cue hooks in message resources without referencing legacy CD RESOURCE.AUD lumps, allowing new voice files to be dropped in seamlessly later."
             ]
           },
           "why": "The original 1993 CD voice performances were widely criticized for insensitive caricatures and uneven delivery. Focusing strictly on text in the floppy release preserves the authentic noir mystery tone while establishing a clean foundation for future voice talent.",
           "evidence": [
             {
-              "label": "O'Reilly Encounter Script",
-              "target": "LB2/448.SCR"
+              "label": "Museum Region Script",
+              "target": "LB2/90.SCR"
             },
             {
-              "label": "Corridor Script",
-              "target": "LB2/454.SCR"
+              "label": "Rotunda Region Script",
+              "target": "LB2/93.SCR"
             },
             {
-              "label": "Resource Messages",
-              "target": "LB2/RESOURCE.MSG"
+              "label": "Carrington Office Script",
+              "target": "LB2/630.SCR"
+            },
+            {
+              "label": "Ziggy Discovery Script",
+              "target": "LB2/435.SCR"
+            },
+            {
+              "label": "Ziggy Head Display Script",
+              "target": "LB2/490.SCR"
             }
           ],
           "related": [
